@@ -1,12 +1,15 @@
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI 
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory
 
 class WithMemoryChatProcessor: 
     
-    def __init__(self, verbose=False, temperature=0.4):
+    def __init__(self, verbose=False, temperature=0.4, type = 1, k = 1):
         self.llm = ChatOpenAI(temperature=temperature)
-        self.memory = ConversationBufferMemory()
+        if type == 1:
+            self.memory = ConversationBufferMemory()
+        if type == 2:
+            self.memory = ConversationBufferWindowMemory(k = k)
         self.chain = ConversationChain(llm = self.llm, memory = self.memory, verbose = verbose)
     
     def chat(self, sentence):
@@ -26,7 +29,7 @@ class WithMemoryChatProcessor:
 
 
 if __name__ == "__main__":
-    wmcp = WithMemoryChatProcessor()
+    wmcp = WithMemoryChatProcessor(type=2)
     print(wmcp.chat("Hi I am Anwesh"))
     print(wmcp.chat("My profession is a software developer"))
     print(wmcp.chat("What is my name?"))
