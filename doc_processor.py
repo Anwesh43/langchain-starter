@@ -3,6 +3,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.vectorstores import DocArrayInMemorySearch
 from langchain.document_loaders import CSVLoader
 from langchain.indexes import VectorstoreIndexCreator 
+from langchain.embeddings import OpenAIEmbeddings 
 from threading import Thread 
 import time
 import sys 
@@ -45,7 +46,38 @@ class DocProcessor:
         self.lt.stop()
         return response 
 
+class StepByStepDocProcessor:
+    
+    def __init__(self):
+        self.embeddings = OpenAIEmbeddings()
+        self.llm = ChatOpenAI(temperature = 0.9)
+
+    def embed(self, query):
+        return self.embeddings.embed_query(query)
+
+    def load_document(self, file_path):
+        self.loader = CSVLoader(file_path = file_path)
+        self.docs = self.loader.load()
+        self.db = DocArrayInMemorySearch.from_documents(self.docs, self.embeddings)
+        self.retriver = self.db.as_retriever()
+        self.chain = RetrievalQA.from_chain_type(llm = self.llm, retriever = self.retriver, verbose=False, chain_type = "stuff")
+
+    def process(self, text):
+        return self.chain.run(text)
+
+    def search_db(self, text):
+        return self.db.similarity_search(text)
+
+    def get_docs(self):
+        return self.docs
+
 if __name__ == "__main__" and len(sys.argv) >= 3:
     dp = DocProcessor()
     dp.load_file(sys.argv[1])
     print(dp.query(" ".join(sys.argv[2:])))
+    
+    #ssp = StepByStepDocProcessor()
+    #print(ssp.embed("Hello world I am Anwesh"))
+    #ssp.load_document(sys.argv[1])
+    #print(ssp.search_db(sys.argv[2]))
+    #print(ssp.process(" ".join(sys.argv[2:])))
